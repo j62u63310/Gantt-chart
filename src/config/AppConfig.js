@@ -60,8 +60,10 @@ export const 本地化 = {
     },
 }
 
-export const filedCodes = {
+export const fieldCodes = {
     訂購單號: '訂購單號',
+    訂購明細: '訂購明細',
+    產品代號: '產品代號',
     Plan表格: 'Plan表格',
     Plan_Order: 'Plan_Order',
 
@@ -69,6 +71,14 @@ export const filedCodes = {
     Order選單: 'Order選單',
     採購明細: '採購明細',
     產品代號: '產品代號',
+
+    組合品明細表格: '組合品明細表格',
+    親產品代號: '親產品代號',
+    子產品代號: '子產品代號',
+    明細組合數: '明細組合數',
 }
 
-export const planOrderAppId = 110;
+export const appId = {
+    planOrderAppId: 110,
+    組合AppId: 88,
+};

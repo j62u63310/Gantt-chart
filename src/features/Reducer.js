@@ -1,5 +1,6 @@
 const initialState = {
     單據: [],
+    組合: [],
 };
 
 const Reducer = (state = initialState, action) => {
@@ -9,6 +10,11 @@ const Reducer = (state = initialState, action) => {
         ...state,
         單據: action.payload,
       };
+    case 'SET_組合_DATA':
+      return {
+        ...state,
+        組合: action.payload,
+      }
     default:
       return state;
   }

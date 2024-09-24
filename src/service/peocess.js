@@ -1,16 +1,14 @@
-import { planOrderAppId } from '../config/AppConfig';
+import { appId } from '../config/AppConfig';
 
 export const fetchOrder = async (query) => {
     const response = await kintone.api(kintone.api.url('/k/v1/records', true), 'GET', {
-        app: planOrderAppId,
+        app: appId.planOrderAppId,
         query: `${query}`,
     });
     return response.records;
 }
 
-
-
-export const fetchAllData = (appID, query = "") => async (dispatch) => {
+export const fetchAllData = (appID, type) => async (dispatch) => {
     let allRecords = [];
     let offset = 0;
     const limit = 500;
@@ -18,7 +16,7 @@ export const fetchAllData = (appID, query = "") => async (dispatch) => {
         while (true) {
             const response = await kintone.api(kintone.api.url('/k/v1/records', true), 'GET', {
                 app: appID,
-                query: `${query} limit ${limit} offset ${offset}`,
+                query: `limit ${limit} offset ${offset}`,
             });
 
             allRecords = allRecords.concat(response.records);
@@ -28,7 +26,7 @@ export const fetchAllData = (appID, query = "") => async (dispatch) => {
             }
         }
         dispatch({
-            type: "SET_單據_DATA",
+            type: type,
             payload: allRecords,
         });
     } catch (error) {

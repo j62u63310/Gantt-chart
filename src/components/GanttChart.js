@@ -1,10 +1,43 @@
 import React, { useEffect, useRef } from 'react';
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
 import gantt from 'dhtmlx-gantt';
-import { filedCodes, 本地化 } from '../config/AppConfig';
+import { useSelector } from 'react-redux';
+import { fieldCodes, 本地化 } from '../config/AppConfig';
 
-const GanttChart = (records) => {
+const GanttChart = ({records, orders}) => {
   const ganttContainer = useRef(null);
+  const 產品組合資料 = useSelector((state) => state.組合);
+
+
+  const transform = (records, layer = 1, parentKey = '', parentQuantity = 1) => {
+    const flatList = [];
+
+    const processRecords = (records, layer, parentKey, parentQuantity, parentItem) => {
+        records.forEach((record, index) => {
+            record[fieldCodes.組合品明細表格].value.forEach((row, rowIndex) => {
+                const key = layer == 1 ? `${layer}-${rowIndex + 1}` : `${parentKey}-${rowIndex + 1}`;
+                const currentQuantity = parentQuantity * row.value[fieldCodes.明細組合數].value; // 計算組合數
+                const item = {
+                    產品代號: row.value[fieldCodes.子產品代號].value,
+                    明細組合數: currentQuantity,
+                    母產品: parentItem,
+                };
+                flatList.push(item);
+
+                const childRecords = 產品組合資料.filter(childRecord =>
+                    childRecord[fieldCodes.親產品代號].value === row.value[fieldCodes.子產品代號].value
+                );
+
+                if (childRecords.length > 0) {
+                    processRecords(childRecords, layer + 1, `${key}`, currentQuantity, row.value[fieldCodes.子產品代號].value);
+                }
+            });
+        });
+    };
+    processRecords(records, layer, parentKey, parentQuantity, records[0][fieldCodes.親產品代號].value);
+    return flatList;
+  };
+
   useEffect(() => {
     //////////////////////////////////////////////////////
     //                     設定                         //
@@ -48,111 +81,45 @@ const GanttChart = (records) => {
     //                     彙整資料                     //
     /////////////////////////////////////////////////////
 
-    const data = [];
-    if(records.length > 0){
-        for(const record of records){
-            for(const row of record[filedCodes.採購明細].value){
-                data.push({
-                    id: data.length,
-                    text: row.value[filedCodes.產品代號].value,
-                    start_date: record[filedCodes.REQ_Date],
+    const recordData = [];
+    const recordLinks = [];
+    for(const order of orders){
+      const BOM表 = transform(產品組合資料.filter(record =>
+        record[fieldCodes.親產品代號].value === order
+      ));
+      const parent = {};
+      for(const record of records){
+          for(const row of record[fieldCodes.採購明細].value){
+              const 產品代號 = row.value[fieldCodes.產品代號].value;
+              if(!parent[產品代號]) parent[產品代號] = recordData.length+1;
+              recordData.push({
+                    id: recordData.length+1,
+                    text: 產品代號,
+                    start_date: record[fieldCodes.REQ_Date].value,
                     duration: 1,
+                    parent: order == 產品代號 ? "" : parent[(BOM表.find(item =>
+                      item[fieldCodes.產品代號] == 產品代號
+                    )).母產品],
                     //end_date: '2023-08-30',
-                    order_type: record[filedCodes.Order選單].value,
+                    order_type: record[fieldCodes.Order選單].value,
                     progress: 1,
-                })
-            }
-        }
+              })
+              recordLinks.push({
+                id: recordLinks.length + 1,
+                source: recordData.length,
+                target: order == 產品代號 ? "" : parent[(BOM表.find(item =>
+                  item[fieldCodes.產品代號] == 產品代號
+                )).母產品],
+                type: '0'
+              })
+          }
+      }
     }
-
-    console.log(records);
-    console.log(data);
-
-
 
     // 定義任務數據
     const tasks = {
-      data: [
-        {
-            id: 1,
-            text: 'P0000',
-            start_date: '2023-08-25',
-            end_date: '2023-08-30',
-            order_type: "採購",
-            progress: 0.45,
-        },
-        {
-            id: 2,
-            text: 'P0001',
-            start_date: '2023-08-28',
-            end_date: '2023-08-30',
-            order_type: "採購",
-            progress: 0.25,
-        },
-        {
-            id: 3,
-            text: 'M0002',
-            start_date: '2023-08-29',
-            end_date: '2023-08-30',
-            order_type: "製造",
-            progress: 0.5,
-        },
-        {
-            id: 4,
-            text: 'M0002:10',
-            start_date: '2023-08-25',
-            end_date: '2023-08-30',
-            order_type: "製造",
-            progress: 0.45,
-            parent: 3
-        },
-        {
-            id: 5,
-            text: 'M0002:20',
-            start_date: '2023-08-28',
-            end_date: '2023-08-30',
-            order_type: "製造",
-            progress: 0.25,
-            parent: 3
-        },
-        {
-            id: 6,
-            text: 'M0002:30',
-            start_date: '2023-08-29',
-            end_date: '2023-08-30',
-            order_type: "製造",
-            progress: 0.5,
-            parent: 3
-        },
-        {
-            id: 7,
-            text: 'M0001',
-            start_date: '2023-08-29',
-            end_date: '2023-08-30',
-            order_type: "製造",
-            progress: 0.5,
-        },
-        {
-            id: 8,
-            text: 'M0000',
-            start_date: '2023-08-29',
-            end_date: '2023-08-30',
-            order_type: "製造",
-            progress: 0.5,
-        },
-        {
-            id: 9,
-            text: 'S1-AX100',
-            start_date: '2023-08-29',
-            end_date: '2023-08-30',
-            order_type: "銷售",
-            progress: 0.5,
-        },
-      ],
-      links: [
-        { id: 1, source: 1, target: 2, type: '0' },
-        { id: 2, source: 2, target: 3, type: '0' },
-      ],
+      data: recordData,
+      links: recordLinks,
     };
 
     gantt.config.columns = [
@@ -167,7 +134,7 @@ const GanttChart = (records) => {
       // 清理甘特圖實例
       gantt.clearAll();
     };
-  }, [records]);
+  }, [records, 產品組合資料]);
 
   return <div ref={ganttContainer} style={{ width: '100%', height: '500px' }} />;
 };
