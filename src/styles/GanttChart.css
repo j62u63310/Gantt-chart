@@ -1,0 +1,23 @@
+.gantt_type_procurement .gantt_task_content {
+    background-color: #4CAF50;
+    color: #FFFFFF;
+}
+
+.gantt_type_outsourcing .gantt_task_content {
+    background-color: #2196F3;
+    color: #FFFFFF;
+}
+
+.gantt_type_manufacturing .gantt_task_content {
+    background-color: #FF9800;
+    color: #FFFFFF;
+}
+
+.gantt_tooltip {
+    z-index: 1000;
+    background-color: #fff;
+    color: #333;
+    padding: 10px;
+    border-radius: 4px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}

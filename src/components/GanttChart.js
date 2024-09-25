@@ -1,13 +1,14 @@
 import React, { useEffect, useRef } from 'react';
 import 'dhtmlx-gantt/codebase/dhtmlxgantt.css';
+
 import gantt from 'dhtmlx-gantt';
 import { useSelector } from 'react-redux';
 import { fieldCodes, 本地化 } from '../config/AppConfig';
+import "../styles/GanttChart.css"
 
 const GanttChart = ({records, orders}) => {
   const ganttContainer = useRef(null);
   const 產品組合資料 = useSelector((state) => state.組合);
-
 
   const transform = (records, layer = 1, parentKey = '', parentQuantity = 1) => {
     const flatList = [];
@@ -74,6 +75,37 @@ const GanttChart = ({records, orders}) => {
     // 設定繁體中文配置
     gantt.locale = 本地化;
 
+    // 顯示任務名稱
+    gantt.templates.task_text = function(start, end, task){
+      return task.name;
+    };
+
+    // 根據訂單種類分類顏色
+    gantt.templates.task_class = function(start, end, task){
+      switch (task.order_type) {
+        case '採購':
+          return 'gantt_type_procurement';
+        case '外製':
+          return 'gantt_type_outsourcing';
+        case '製造':
+          return 'gantt_type_manufacturing';
+        default:
+          return '';
+      }
+    };
+
+    gantt.templates.tooltip_text = function(start, end, task) {
+      console.log(task);
+      return `<b>產品代號:</b> ${task.text}<br/>
+              <b>產品名稱:</b> ${task.name}<br/>
+              <b>訂購數量:</b> ${task.quantity}<br/>
+              <b>訂單種類:</b> ${task.order_type}<br/>`;
+    };
+
+    gantt.config.tooltip_timeout = 0;
+
+    gantt.plugins({ tooltip: true });
+
     // 初始化甘特圖
     gantt.init(ganttContainer.current);
 
@@ -91,16 +123,20 @@ const GanttChart = ({records, orders}) => {
       for(const record of records){
           for(const row of record[fieldCodes.採購明細].value){
               const 產品代號 = row.value[fieldCodes.產品代號].value;
+              const 產品名稱 = row.value[fieldCodes.產品名稱].value;
+              const 數量 = row.value[fieldCodes.數量].value;
+              const REQ_Date = row.value[fieldCodes.REQ_Date].value;
               if(!parent[產品代號]) parent[產品代號] = recordData.length+1;
               recordData.push({
                     id: recordData.length+1,
-                    text: 產品代號,
-                    start_date: record[fieldCodes.REQ_Date].value,
+                    text: `${產品代號} ${產品名稱}`,
+                    name: 產品名稱,
+                    quantity: 數量,
+                    start_date: REQ_Date,
                     duration: 1,
                     parent: order == 產品代號 ? "" : parent[(BOM表.find(item =>
                       item[fieldCodes.產品代號] == 產品代號
                     )).母產品],
-                    //end_date: '2023-08-30',
                     order_type: record[fieldCodes.Order選單].value,
                     progress: 1,
               })
@@ -123,8 +159,9 @@ const GanttChart = ({records, orders}) => {
     };
 
     gantt.config.columns = [
-        { name: 'text', label: '任務名', width: '200', tree: true },
-        { name: 'order_type', label: '訂單種類', align: 'center' },
+      { name: 'text', label: '產品代號', width: 1000, tree: true }, // 使用自動寬度
+      { name: 'quantity', label: '訂單數量', width: 100, align: 'center'},
+      { name: 'order_type', label: '訂單種類', width: 150, align: 'center' },
     ];
 
     // 加載任務數據
