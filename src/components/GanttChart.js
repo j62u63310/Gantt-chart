@@ -115,42 +115,67 @@ const GanttChart = ({records, orders}) => {
 
     const recordData = [];
     const recordLinks = [];
-    for(const order of orders){
-      const BOM表 = transform(產品組合資料.filter(record =>
-        record[fieldCodes.親產品代號].value === order
-      ));
+    
+    for (const order of orders) {
+      const BOM表 = transform(
+        產品組合資料.filter(
+          (record) => record[fieldCodes.親產品代號].value === order
+        )
+      );
+      BOM表.unshift({
+        產品代號: order,
+        明細組合數: 1,
+        母產品: order,
+      });
+    
       const parent = {};
-      for(const record of records){
-          for(const row of record[fieldCodes.採購明細].value){
-              const 產品代號 = row.value[fieldCodes.產品代號].value;
-              const 產品名稱 = row.value[fieldCodes.產品名稱].value;
-              const 數量 = row.value[fieldCodes.數量].value;
-              const REQ_Date = row.value[fieldCodes.REQ_Date].value;
-              if(!parent[產品代號]) parent[產品代號] = recordData.length+1;
-              recordData.push({
-                    id: recordData.length+1,
-                    text: `${產品代號} ${產品名稱}`,
-                    name: 產品名稱,
-                    quantity: 數量,
-                    start_date: REQ_Date,
-                    duration: 1,
-                    parent: order == 產品代號 ? "" : parent[(BOM表.find(item =>
-                      item[fieldCodes.產品代號] == 產品代號
-                    )).母產品],
-                    order_type: record[fieldCodes.Order選單].value,
-                    progress: 1,
-              })
-              recordLinks.push({
-                id: recordLinks.length + 1,
-                source: recordData.length,
-                target: order == 產品代號 ? "" : parent[(BOM表.find(item =>
-                  item[fieldCodes.產品代號] == 產品代號
-                )).母產品],
-                type: '0'
-              })
-          }
+    
+      // 创建產品代號到数据的映射
+      const productCodeToData = {};
+    
+      for (const record of records) {
+        for (const row of record[fieldCodes.採購明細].value) {
+          const 產品代號 = row.value[fieldCodes.產品代號].value;
+          // 将数据存入映射
+          productCodeToData[產品代號] = { record, row };
+        }
+      }
+    
+      // 按照BOM表的順序處理
+      for (const bomItem of BOM表) {
+        const 產品代號 = bomItem[fieldCodes.產品代號];
+        const 母產品 = bomItem['母產品']; // 根据实际字段名调整
+    
+        if (productCodeToData[產品代號]) {
+          const { record, row } = productCodeToData[產品代號];
+          const 產品名稱 = row.value[fieldCodes.產品名稱].value;
+          const 數量 = row.value[fieldCodes.數量].value;
+          const REQ_Date = row.value[fieldCodes.REQ_Date].value;
+    
+          if (!parent[產品代號]) parent[產品代號] = recordData.length + 1;
+    
+          recordData.push({
+            id: recordData.length + 1,
+            text: `${產品代號} ${產品名稱}`,
+            name: 產品名稱,
+            quantity: 數量,
+            start_date: REQ_Date,
+            duration: 1,
+            parent: order === 產品代號 ? "" : parent[母產品],
+            order_type: record[fieldCodes.Order選單].value,
+            progress: 1,
+          });
+    
+          recordLinks.push({
+            id: recordLinks.length + 1,
+            source: recordData.length,
+            target: order === 產品代號 ? "" : parent[母產品],
+            type: '0',
+          });
+        }
       }
     }
+    
 
     // 定義任務數據
     const tasks = {
